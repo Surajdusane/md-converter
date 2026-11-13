@@ -1,0 +1,35 @@
+# Vite emits content-hashed files under /assets, including the 6.7 MB
+# anydoc .wasm. Cloudflare compresses the wasm (application/wasm is on its
+# compression list) and this header makes repeat visits download nothing.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Non-hashed public files: cache for a week.
+/*.png
+  Cache-Control: public, max-age=604800
+/*.ico
+  Cache-Control: public, max-age=604800
+/*.svg
+  Cache-Control: public, max-age=604800
+/*.webmanifest
+  Cache-Control: public, max-age=604800
+/robots.txt
+  Cache-Control: public, max-age=604800
+
+# The app shell. CSP lives here (not on hashed assets) so a policy change is
+# picked up immediately and never pinned by an immutable cache entry. Workers
+# and the wasm they load inherit this document policy.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:
+
+# Baseline hardening on every response.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin

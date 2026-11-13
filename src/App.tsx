@@ -19,6 +19,7 @@ export function App() {
     items,
     batch,
     wasmStatus,
+    wasmProgress,
     selectedItem,
     addFiles,
     removeItem,
@@ -30,6 +31,14 @@ export function App() {
   const doneItems = items.filter(
     (item) => item.status === "done" && item.markdown,
   );
+
+  const wasmPercent =
+    wasmProgress && wasmProgress.total > 0
+      ? Math.min(
+          100,
+          Math.max(1, Math.round((wasmProgress.loaded / wasmProgress.total) * 100)),
+        )
+      : null;
 
   const prevCountRef = useRef(0);
   useEffect(() => {
@@ -77,17 +86,25 @@ export function App() {
   };
 
   const handleDownloadZip = async () => {
-    await downloadMarkdownZip(
-      doneItems.map((item) => ({
-        name: item.file.name,
-        markdown: item.markdown ?? "",
-      })),
-    );
-    toastManager.add({
-      title: "Downloaded .zip",
-      description: `${doneItems.length} markdown files bundled.`,
-      type: "success",
-    });
+    try {
+      await downloadMarkdownZip(
+        doneItems.map((item) => ({
+          name: item.file.name,
+          markdown: item.markdown ?? "",
+        })),
+      );
+      toastManager.add({
+        title: "Downloaded .zip",
+        description: `${doneItems.length} markdown files bundled.`,
+        type: "success",
+      });
+    } catch {
+      toastManager.add({
+        title: "Couldn't build the .zip",
+        description: "Download the files individually instead.",
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -119,7 +136,10 @@ export function App() {
                   <div className="text-sm text-muted-foreground">
                     {items.length} {items.length === 1 ? "file" : "files"}
                     {batch.completed > 0 && !batch.running
-                      ? ` · ${batch.completed} converted`
+                      ? ` · ${batch.completed - batch.failed} converted`
+                      : ""}
+                    {batch.failed > 0 && !batch.running
+                      ? ` · ${batch.failed} failed`
                       : ""}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -149,13 +169,17 @@ export function App() {
                   <Progress
                     aria-label="Loading converter"
                     className="gap-1.5"
-                    value={null}
+                    value={wasmPercent}
                   >
                     <ProgressTrack>
-                      <ProgressIndicator className="w-1/3 animate-pulse" />
+                      <ProgressIndicator
+                        className={wasmPercent === null ? "w-1/3 animate-pulse" : ""}
+                      />
                     </ProgressTrack>
                     <p className="text-xs text-muted-foreground">
-                      Loading converter (a few MB, one time)…
+                      {wasmPercent === null
+                        ? "Loading the converter (one-time download, then cached)…"
+                        : `Loading the converter… ${wasmPercent}% (one-time download, then cached)`}
                     </p>
                   </Progress>
                 )}

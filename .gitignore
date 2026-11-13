@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Cloudflare / local tooling
+.wrangler
+.dev.vars
+
+# Scratch files
+.tmp-*
+.tmp*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

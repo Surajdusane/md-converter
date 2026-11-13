@@ -1,16 +1,35 @@
-import JSZip from "jszip";
-
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = "noopener";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  // Revoking synchronously can cancel the download in some browsers.
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function markdownFileName(name: string): string {
   return name.replace(/\.[^.]+$/, "") + ".md";
+}
+
+function uniqueName(name: string, used: Set<string>): string {
+  if (!used.has(name)) {
+    used.add(name);
+    return name;
+  }
+  const base = name.replace(/\.md$/i, "");
+  let index = 2;
+  let candidate = `${base}-${index}.md`;
+  while (used.has(candidate)) {
+    index += 1;
+    candidate = `${base}-${index}.md`;
+  }
+  used.add(candidate);
+  return candidate;
 }
 
 export function downloadMarkdown(name: string, markdown: string) {
@@ -24,11 +43,20 @@ export async function downloadMarkdownZip(
   files: Array<{ name: string; markdown: string }>,
   zipName = "markdown-bundle.zip",
 ) {
+  // JSZip is only needed here, so keep it out of the initial bundle.
+  const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
+  const used = new Set<string>();
+
   for (const file of files) {
-    zip.file(markdownFileName(file.name), file.markdown);
+    zip.file(uniqueName(markdownFileName(file.name), used), file.markdown);
   }
-  const blob = await zip.generateAsync({ type: "blob" });
+
+  const blob = await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
+  });
   triggerDownload(blob, zipName);
 }
 

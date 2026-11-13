@@ -1,6 +1,10 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "Document to Markdown Converter",
+  "short_name": "MD Converter",
+  "description": "Convert Word, PowerPoint, Excel, PDF, OpenDocument, RTF and EPUB files to Markdown in your browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -15,7 +19,6 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a"
 }

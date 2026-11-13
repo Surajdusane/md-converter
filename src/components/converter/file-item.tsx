@@ -19,6 +19,24 @@ import { formatBytes } from "@/lib/download";
 import { cn } from "@/lib/utils";
 import type { QueueItem } from "@/hooks/use-converter";
 
+const ERROR_LABELS: Record<string, string> = {
+  needsOcr: "Needs OCR",
+  resourceLimit: "Too large",
+  encrypted: "Encrypted",
+  malformed: "Broken",
+  missingPart: "Incomplete",
+  init: "Not loaded",
+  unknown: "Failed",
+  unsupported: "Unsupported",
+};
+
+function errorLabel(code: string | undefined): string {
+  if (!code) {
+    return "Failed";
+  }
+  return ERROR_LABELS[code] ?? "Failed";
+}
+
 type FileItemProps = {
   item: QueueItem;
   selected: boolean;
@@ -114,7 +132,7 @@ export function FileItem({
           {item.status === "error" && (
             <Badge variant="warning" className="gap-1">
               <TriangleAlertIcon />
-              {item.errorCode}
+              {errorLabel(item.errorCode)}
             </Badge>
           )}
           {item.status === "done" && (

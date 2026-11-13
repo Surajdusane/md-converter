@@ -29,7 +29,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
-import { MarkdownPreview } from "@/components/converter/markdown-preview";
+import { LazyMarkdownPreview } from "@/components/converter/lazy-markdown-preview";
 import { formatMeta } from "@/lib/formats";
 import { markdownStats } from "@/lib/download";
 import type { QueueItem } from "@/hooks/use-converter";
@@ -89,7 +89,7 @@ function PreviewTabs({
       </TabsList>
       <TabsPanel className="min-h-0 flex-1" value="preview">
         <div className={scrollClassName}>
-          <MarkdownPreview markdown={markdown} />
+          <LazyMarkdownPreview markdown={markdown} />
         </div>
       </TabsPanel>
       <TabsPanel className="min-h-0 flex-1" value="raw">
@@ -248,7 +248,7 @@ export function OutputPanel({ item, onCopy, onDownload }: OutputPanelProps) {
           </div>
           <TabsPanel className="flex min-h-0 flex-1 flex-col" value="preview">
             <div className="min-h-64 flex-1 overflow-y-auto rounded-lg bg-(--code)">
-              <MarkdownPreview markdown={item.markdown} />
+              <LazyMarkdownPreview markdown={item.markdown} />
             </div>
           </TabsPanel>
           <TabsPanel className="flex min-h-0 flex-1 flex-col" value="raw">

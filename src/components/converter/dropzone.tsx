@@ -10,7 +10,9 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { toastManager } from "@/components/ui/toast";
+import { prewarmConverter } from "@/lib/converter-client";
 import { SAMPLES } from "@/lib/samples";
+import { ACCEPT_ATTRIBUTE } from "@/lib/wasm";
 import { cn } from "@/lib/utils";
 
 type DropzoneProps = {
@@ -59,6 +61,9 @@ export function Dropzone({ onFiles }: DropzoneProps) {
         event.preventDefault();
         dragDepth.current += 1;
         setDragging(true);
+        // The WASM download is the slow part; start it while the user is still
+        // dragging so the conversion begins the moment they drop.
+        prewarmConverter();
       }}
       onDragOver={(event) => {
         event.preventDefault();
@@ -83,7 +88,7 @@ export function Dropzone({ onFiles }: DropzoneProps) {
         className="sr-only"
         type="file"
         multiple
-        accept=".doc,.docx,.odt,.pdf,.ppt,.pptx,.odp,.xlsx,.ods,.csv,.rtf,.epub"
+        accept={ACCEPT_ATTRIBUTE}
         onChange={(event) => {
           handleFiles(event.target.files ?? []);
           event.target.value = "";
@@ -104,7 +109,10 @@ export function Dropzone({ onFiles }: DropzoneProps) {
         <EmptyContent>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button
-              onClick={() => inputRef.current?.click()}
+              onClick={() => {
+                prewarmConverter();
+                inputRef.current?.click();
+              }}
               variant="outline"
             >
               <FolderOpenIcon />
