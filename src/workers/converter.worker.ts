@@ -38,7 +38,7 @@ function fail(error: unknown): { code: ConversionErrorCode; message: string } {
   return { code: "unknown", message: String(error) };
 }
 
-async function downloadWasm(): Promise<Uint8Array> {
+async function downloadWasm(): Promise<Uint8Array<ArrayBuffer>> {
   const response = await fetch(wasmUrl, {
     credentials: "same-origin",
     // The asset name contains a content hash, so a cached copy is always valid.
@@ -91,7 +91,7 @@ async function concat(
   first: Uint8Array,
   reader: ReadableStreamDefaultReader<Uint8Array>,
   total: number,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const chunks: Uint8Array[] = [buffer.subarray(0, offset), first];
   let loaded = offset + first.byteLength;
   for (;;) {

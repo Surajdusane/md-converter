@@ -29,16 +29,54 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectItem,
+  SelectPopup,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LazyMarkdownPreview } from "@/components/converter/lazy-markdown-preview";
 import { formatMeta } from "@/lib/formats";
-import { markdownStats } from "@/lib/download";
+import {
+  COPY_FORMAT_OPTIONS,
+  markdownStats,
+  type CopyFormat,
+} from "@/lib/download";
 import type { QueueItem } from "@/hooks/use-converter";
 
 type OutputPanelProps = {
   item: QueueItem | null;
-  onCopy: (markdown: string) => void;
+  onCopy: (markdown: string, format: CopyFormat) => void;
   onDownload: (item: QueueItem) => void;
 };
+
+function CopyFormatSelect({
+  value,
+  onValueChange,
+}: {
+  value: CopyFormat;
+  onValueChange: (value: CopyFormat) => void;
+}) {
+  return (
+    <Select
+      items={COPY_FORMAT_OPTIONS}
+      onValueChange={(next) => onValueChange(next as CopyFormat)}
+      value={value}
+    >
+      <SelectTrigger aria-label="Copy format" className="w-32" size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectPopup>
+        {COPY_FORMAT_OPTIONS.map((format) => (
+          <SelectItem key={format.value} value={format.value}>
+            {format.label}
+          </SelectItem>
+        ))}
+      </SelectPopup>
+    </Select>
+  );
+}
 
 function StatsRow({ markdown }: { markdown: string }) {
   const stats = useMemo(() => markdownStats(markdown), [markdown]);
@@ -107,13 +145,17 @@ function ExpandDialog({
   item,
   tab,
   onTabChange,
+  copyFormat,
+  onCopyFormatChange,
   onCopy,
   onDownload,
 }: {
   item: QueueItem;
   tab: string;
   onTabChange: (value: string) => void;
-  onCopy: (markdown: string) => void;
+  copyFormat: CopyFormat;
+  onCopyFormatChange: (value: CopyFormat) => void;
+  onCopy: (markdown: string, format: CopyFormat) => void;
   onDownload: (item: QueueItem) => void;
 }) {
   const meta = formatMeta(item.usedFormat);
@@ -148,8 +190,12 @@ function ExpandDialog({
         </DialogPanel>
         <DialogFooter>
           <DialogClose render={<Button variant="ghost" />}>Close</DialogClose>
+          <CopyFormatSelect
+            onValueChange={onCopyFormatChange}
+            value={copyFormat}
+          />
           <Button
-            onClick={() => onCopy(item.markdown ?? "")}
+            onClick={() => onCopy(item.markdown ?? "", copyFormat)}
             size="sm"
             variant="outline"
           >
@@ -168,6 +214,7 @@ function ExpandDialog({
 
 export function OutputPanel({ item, onCopy, onDownload }: OutputPanelProps) {
   const [tab, setTab] = useState("preview");
+  const [copyFormat, setCopyFormat] = useState<CopyFormat>("plain");
   const meta = formatMeta(item?.usedFormat);
 
   if (!item?.markdown) {
@@ -205,9 +252,13 @@ export function OutputPanel({ item, onCopy, onDownload }: OutputPanelProps) {
             <StatsRow markdown={item.markdown} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <CopyFormatSelect
+            onValueChange={setCopyFormat}
+            value={copyFormat}
+          />
           <Button
-            onClick={() => onCopy(item.markdown ?? "")}
+            onClick={() => onCopy(item.markdown ?? "", copyFormat)}
             size="sm"
             variant="outline"
           >
@@ -240,7 +291,9 @@ export function OutputPanel({ item, onCopy, onDownload }: OutputPanelProps) {
             </TabsList>
             <ExpandDialog
               item={item}
+              copyFormat={copyFormat}
               onCopy={onCopy}
+              onCopyFormatChange={setCopyFormat}
               onDownload={onDownload}
               onTabChange={setTab}
               tab={tab}

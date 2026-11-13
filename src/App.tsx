@@ -12,7 +12,13 @@ import { FormatsSection } from "@/components/sections/formats";
 import { FeaturesSection } from "@/components/sections/features";
 import { FaqSection } from "@/components/sections/faq";
 import { useConverter } from "@/hooks/use-converter";
-import { copyText, downloadMarkdown, downloadMarkdownZip } from "@/lib/download";
+import {
+  COPY_FORMAT_LABELS,
+  copyMarkdown,
+  downloadMarkdown,
+  downloadMarkdownZip,
+  type CopyFormat,
+} from "@/lib/download";
 
 export function App() {
   const {
@@ -69,11 +75,11 @@ export function App() {
     wasRunningRef.current = batch.running;
   }, [batch]);
 
-  const handleCopy = async (markdown: string) => {
+  const handleCopy = async (markdown: string, format: CopyFormat) => {
     try {
-      await copyText(markdown);
+      await copyMarkdown(markdown, format);
       toastManager.add({
-        title: "Copied to clipboard",
+        title: `Copied as ${COPY_FORMAT_LABELS[format]}`,
         type: "success",
       });
     } catch {
@@ -229,7 +235,7 @@ export function App() {
               <div className="min-w-0 lg:sticky lg:top-16 lg:self-start">
                 <OutputPanel
                   item={selectedItem}
-                  onCopy={(markdown) => void handleCopy(markdown)}
+                  onCopy={(markdown, format) => void handleCopy(markdown, format)}
                   onDownload={(queueItem) =>
                     downloadMarkdown(
                       queueItem.file.name,

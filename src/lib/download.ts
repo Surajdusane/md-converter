@@ -1,3 +1,5 @@
+import { createElement } from "react";
+
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -73,6 +75,97 @@ export async function copyText(text: string): Promise<void> {
   textarea.select();
   document.execCommand("copy");
   textarea.remove();
+}
+
+export type CopyFormat = "plain" | "rich" | "html";
+
+export const COPY_FORMAT_OPTIONS = [
+  { value: "plain", label: "Plain text" },
+  { value: "rich", label: "Rich text" },
+  { value: "html", label: "HTML" },
+] as const satisfies ReadonlyArray<{ value: CopyFormat; label: string }>;
+
+export const COPY_FORMAT_LABELS: Record<CopyFormat, string> = {
+  plain: "plain text",
+  rich: "rich text",
+  html: "HTML",
+};
+
+async function markdownToHtml(markdown: string): Promise<string> {
+  // Keep these out of the initial bundle until a copy actually needs them.
+  const [{ default: Markdown }, { default: remarkGfm }, { renderToStaticMarkup }] =
+    await Promise.all([
+      import("react-markdown"),
+      import("remark-gfm"),
+      import("react-dom/server"),
+    ]);
+
+  return renderToStaticMarkup(
+    createElement(Markdown, { remarkPlugins: [remarkGfm] }, markdown),
+  );
+}
+
+function copyRichTextFallback(html: string): void {
+  const container = document.createElement("div");
+  container.contentEditable = "true";
+  container.innerHTML = html;
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
+  container.style.top = "0";
+  container.style.opacity = "0";
+  document.body.appendChild(container);
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(container);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  const copied = document.execCommand("copy");
+
+  selection?.removeAllRanges();
+  container.remove();
+
+  if (!copied) {
+    throw new Error("Rich text copy is not supported");
+  }
+}
+
+async function copyRichText(markdown: string, html: string): Promise<void> {
+  if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([markdown], { type: "text/plain" }),
+        }),
+      ]);
+      return;
+    } catch {
+      // Fall through to the selection-based copy below.
+    }
+  }
+
+  copyRichTextFallback(html);
+}
+
+export async function copyMarkdown(
+  markdown: string,
+  format: CopyFormat,
+): Promise<void> {
+  if (format === "plain") {
+    await copyText(markdown);
+    return;
+  }
+
+  const html = await markdownToHtml(markdown);
+
+  if (format === "html") {
+    await copyText(html);
+    return;
+  }
+
+  await copyRichText(markdown, html);
 }
 
 export function formatBytes(bytes: number): string {
